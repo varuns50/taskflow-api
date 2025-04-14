@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import cors from "cors";
 import userRoutes from './routes/users.routes';
+import activityRoutes from './routes/activity-records';
 
 dotenv.config();
 
@@ -80,6 +81,7 @@ app.post('/refresh', (req: Request, res: Response) => {
 });
 
 app.use("/users", userRoutes); // Mount the user routes under "/users"
+app.use('/api/activity-records', activityRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
