@@ -1,5 +1,5 @@
 import express from "express";
-import { docClient } from "../services/dynamo.service";
+import { docClient } from "../utils/dynamoDBClient";
 import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { authenticateToken, AuthRequest } from "../middlewares/auth.middleware";
 import * as dotenv from "dotenv";

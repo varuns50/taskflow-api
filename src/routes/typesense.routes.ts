@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, ScanCommandOutput } from '@aws-sdk/lib-dynamodb';
-import typesense from '../utils/typesenseClient';
+import typesenseClient from '../utils/typesenseClient';
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 router.get('/typesense-records', async (req, res) => {
     try {
-      const results = await typesense
+      const results = await typesenseClient
         .collections('activity_records') // your collection name
         .documents()
         .search({
@@ -76,7 +76,7 @@ router.get('/typesense-records', async (req, res) => {
         if (!jsonlPayload) continue;
   
         // Bulk import to Typesense
-        const importResult = await typesense
+        const importResult = await typesenseClient
           .collections('activity_records')
           .documents()
           .import(jsonlPayload, { action: 'upsert' });
@@ -122,4 +122,37 @@ router.get('/typesense-records', async (req, res) => {
       res.status(500).json({ message: 'Indexing failed', error: err });
     }
   });
-export default router;
+
+  router.get('/records', async (req, res) => {
+    const { userId, action, device, page = '1', perPage = '10' } = req.query;
+  
+    try {
+      // Build Typesense-compatible filters
+      const filters = [];
+      if (userId) filters.push(`userId:=${userId}`);
+      if (action) filters.push(`action:=${action}`);
+      if (device) filters.push(`device:=${device}`);
+  
+      const filterBy = filters.join(' && ');
+  
+      const result = await typesenseClient.collections('activity_records').documents().search({
+        q: '*', // Required by Typesense
+        query_by: 'recordId', // Required even if not used
+        filter_by: filterBy || undefined, // Only include if present
+        sort_by: 'timestamp:desc',
+        page: parseInt(page as string),
+        per_page: parseInt(perPage as string),
+      });
+  
+      res.status(200).json({
+        total: result.found,
+        page: result.page,
+        results: (result.hits || []).map((hit: any) => hit.document),
+      });
+    } catch (err) {
+      console.error('❌ Typesense search error:', err);
+      res.status(500).json({ message: 'Failed to fetch records from Typesense' });
+    }
+  });
+
+  export default router;

@@ -4,8 +4,8 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import cors from "cors";
 import userRoutes from './routes/users.routes';
-import activityRoutes from './routes/activity-records';
-import typesenseSyncJobs from './routes/typesenseSyncJob'
+import activityRoutes from './routes/activity.records.routes';
+import typesenseRoutes from './routes/typesense.routes'
 dotenv.config();
 
 const app: Application = express();
@@ -80,9 +80,9 @@ app.post('/refresh', (req: Request, res: Response) => {
     });
 });
 
-app.use("/users", userRoutes); // Mount the user routes under "/users"
-app.use('/api/activity-records', activityRoutes);
-app.use('/api',typesenseSyncJobs);
+app.use("/api/users", userRoutes); // Mount the user routes under "/users"
+app.use('/api/dynamo', activityRoutes);
+app.use('/api/typesense', typesenseRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

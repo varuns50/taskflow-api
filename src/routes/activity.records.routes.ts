@@ -1,6 +1,6 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { docClient } from '../services/dynamo.service';
+import { docClient } from '../utils/dynamoDBClient';
 import { PutCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 const router = express.Router();
@@ -156,6 +156,66 @@ router.get('/filter', async (req, res) => {
       res.status(500).json({ error: 'Failed to filter records' });
     }
   });
+
+// Get All Records using filters + pagination
+  router.get('/records', async (req, res) => {
+  const { userId, action, device, limit = '10', lastKey } = req.query;
+
+  let filterExpression = '';
+  const expressionAttributeValues: any = {
+    ':staticKey': 'all',
+  };
+  const expressionAttributeNames: any = {};
+
+  // Add filters dynamically
+  if (userId) {
+    filterExpression += '#userId = :userId';
+    expressionAttributeValues[':userId'] = userId;
+    expressionAttributeNames['#userId'] = 'userId';
+  }
+
+  if (action) {
+    if (filterExpression) filterExpression += ' AND ';
+    filterExpression += '#action = :action';
+    expressionAttributeValues[':action'] = action;
+    expressionAttributeNames['#action'] = 'action';
+  }
+
+  if (device) {
+    if (filterExpression) filterExpression += ' AND ';
+    filterExpression += 'metadata.device = :device';
+    expressionAttributeValues[':device'] = device;
+  }
+
+  const params: any = {
+    TableName: 'ActivityRecordsV2',
+    IndexName: 'staticKey-timestamp-index',
+    KeyConditionExpression: 'staticKey = :staticKey',
+    ExpressionAttributeValues: expressionAttributeValues,
+    FilterExpression: filterExpression || undefined,
+    ExpressionAttributeNames:
+      Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+    ScanIndexForward: false,
+    Limit: parseInt(limit as string),
+    ExclusiveStartKey: lastKey ? JSON.parse(decodeURIComponent(lastKey as string)) : undefined,
+  };
+
+  console.log('params -:', params)
+
+  try {
+    const data = await docClient.send(new QueryCommand(params));
+
+    res.json({
+      items: data.Items,
+      nextKey: data.LastEvaluatedKey
+        ? encodeURIComponent(JSON.stringify(data.LastEvaluatedKey))
+        : null,
+    });
+  } catch (err) {
+    console.error('❌ DynamoDB filter fetch failed:', err);
+    res.status(500).json({ error: 'Failed to fetch records from DynamoDB' });
+  }
+});
   
 
 export default router;
