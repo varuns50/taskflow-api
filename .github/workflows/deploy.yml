@@ -3,16 +3,17 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main   # Change if your default branch is different
+      - main   # 👈 change branch if needed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Setup SSH key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -21,4 +22,9 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "cd /var/www/app && git pull && npm install && pm2 restart app"
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "
+            cd /var/www/myapp || exit 1
+            git pull origin main
+            npm install --production
+            pm2 restart myapp || pm2 start npm --name taskflow-api -- run start
+          "
