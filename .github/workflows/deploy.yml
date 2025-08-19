@@ -2,26 +2,29 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main   # Change if your default branch is different
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H <EC2_IP> >> ~/.ssh/known_hosts
+
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            cd ~/taskflow-api
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@<EC2_IP> << 'EOF'
+            cd ~/app   # your app folder on EC2
             git pull origin main
-            npm install
-            npm run build
-            pm2 restart taskflow-api || pm2 start dist/app.js --name taskflow-api
+            npm install --production
+            pm2 restart all || pm2 start app.js
+          EOF
