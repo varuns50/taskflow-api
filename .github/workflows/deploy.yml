@@ -3,28 +3,22 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main   # 👈 change branch if needed
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
       - name: Deploy to EC2
-        run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "
-            cd /var/www/myapp || exit 1
-            git pull origin main
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/taskflow-api || exit 1
+            git fetch origin main
+            git reset --hard origin/main
             npm install --production
-            pm2 restart myapp || pm2 start npm --name taskflow-api -- run start
-          "
+            pm2 restart taskflow-api || pm2 start npm --name "taskflow-api" -- run start
