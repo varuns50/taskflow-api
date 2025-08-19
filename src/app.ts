@@ -86,7 +86,7 @@ app.use('/api/typesense', typesenseRoutes);
 
 // ✅ Test deployment endpoint
 app.get("/test", (req: Request, res: Response) => {
-    res.json({ number: "001" });
+    res.json({ number: "002" });
   });
   
 
