@@ -84,6 +84,12 @@ app.use("/api/users", userRoutes); // Mount the user routes under "/users"
 app.use('/api/dynamo', activityRoutes);
 app.use('/api/typesense', typesenseRoutes);
 
+// ✅ Test deployment endpoint
+app.get("/test", (req: Request, res: Response) => {
+    res.json({ number: "001" });
+  });
+  
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
