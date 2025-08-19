@@ -21,4 +21,5 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             npm install --production
+            npm run build
             pm2 restart taskflow-api || pm2 start npm --name "taskflow-api" -- run start
