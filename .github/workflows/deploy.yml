@@ -17,9 +17,11 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e  # Exit immediately if a command fails
             cd /home/ubuntu/taskflow-api || exit 1
             git fetch origin main
             git reset --hard origin/main
-            npm install --production
+            npm install
             npm run build
-            pm2 restart taskflow-api || pm2 start npm --name "taskflow-api" -- run start
+            pm2 describe taskflow-api > /dev/null 2>&1 && pm2 restart taskflow-api || pm2 start npm --name "taskflow-api" -- run start
+            pm2 save
