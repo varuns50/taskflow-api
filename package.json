@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon -r dotenv/config --exec ts-node src/app.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.774.0",
